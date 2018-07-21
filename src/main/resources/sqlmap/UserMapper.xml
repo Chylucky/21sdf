@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.bw.zhou.dao.UserDao">
+     <!-- resultMap:映射实体类和字段之间的一一对应的关系 -->
+     <resultMap type="com.bw.zhou.pojo.User" id="userMap">
+        <id property="uid" column="uid"/>
+        <result property="bh" column="bh"/>
+        <result property="name" column="name"/>
+        <result property="tel" column="tel"/>
+        <result property="fname" column="fname"/>
+         <!-- 多对多关联映射:collection -->
+         <collection property="yong" ofType="com.bw.zhou.pojo.Yong">
+            <id property="yid" column="yid"/>
+            <result property="yname" column="yname"/>
+         </collection>
+     </resultMap>
+ <select id="getList" resultMap="userMap" parameterType="hashmap">
+       select u.*,GROUP_CONCAT(y.yname SEPARATOR ',') AS fname
+       FROM USER u
+       LEFT JOIN middle m
+       ON u.uid = m.uid
+       LEFT JOIN yong y
+       ON m.yid = y.yid
+     <where>
+        <if test="mohu != null and mohu != ''">
+          name like '%${mohu}%' 
+        </if>
+     </where>
+      GROUP BY m.uid
+      limit #{PageRecord},#{PageSize} 
+ </select> 
+ <select id="getcountUser" resultType="int">
+    select count(1) from user
+ </select>
+           <!-- 在添加时回显辅表 -->
+ <select id="selectYong" resultType="com.bw.zhou.pojo.Yong">
+   select * from yong
+ </select>
+           <!-- 先添加主表  -->
+ <insert id="add" parameterType="com.bw.zhou.pojo.User" useGeneratedKeys="true" keyColumn="uid" keyProperty="uid">
+   insert into user(bh,name,tel) values(#{bh},#{name},#{tel})
+ </insert>
+            <!-- 再去添加中间表 -->
+ <insert id="addzhong" parameterType="com.bw.zhou.pojo.User">
+   insert into middle(uid,yid) values
+   <foreach collection="tids" item="yid" separator=",">
+     (#{uid},#{yid})
+   </foreach>
+ </insert>
+       <!-- 批量去删除  -->
+ <delete id="toPs">
+     delete from user where uid in
+     <foreach collection="list" item="uid" open="(" separator="," close=")">
+      #{uid}
+     </foreach>
+ </delete>
+       <!-- 单个查看 -->
+ <select id="selectById" resultType="com.bw.zhou.pojo.User">
+    select u.*,GROUP_CONCAT(y.yname SEPARATOR ",") AS fname
+    from user u
+    LEFT JOIN middle m
+    ON u.uid = m.uid
+    LEFT JOIN yong y
+    ON m.yid = y.yid
+    where u.uid = #{uid}
+    GROUP BY u.uid
+ </select>
+       <!-- 修改 -->
+</mapper>
